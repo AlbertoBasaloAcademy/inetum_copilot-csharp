@@ -1,12 +1,12 @@
-# Copilot CSharp
-Demo laboratory Copilot course CSharp edition
+# Inetum Copilot CSharp
+Demo laboratory Copilot course CSharp edition for Inetum
 
 ## Dev workflow
 
 ```bash
 # Clone repository
-git clone https://github.com/AlbertoBasaloLabs/copilot-csharp.git
-cd copilot-csharp
+git clone https://github.com/AlbertoBasaloAcademy/inetum_copilot-csharp.git
+cd inetum_copilot-csharp
 # Compile C# code
 dotnet build ./src/Askbot
 # Run C# code
@@ -26,4 +26,4 @@ A CLI educational tool that queries public APIs to provide basic information fro
 
 - Author: [Alberto Basalo](https://albertobasalo.dev)
 - Academy: [Academy Organization](https://github.com/AlbertoBasaloAcademy)
-- Laboratory: [Source Repository](https://github.com/AlbertoBasaloLabs/copilot-csharp)
+- Laboratory: [Source Repository](https://github.com/AlbertoBasaloAcademy/inetum_copilot-csharp)
