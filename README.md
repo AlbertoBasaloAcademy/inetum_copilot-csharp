@@ -20,6 +20,10 @@ dotnet run --project ./src/Askbot -- weather
 A CLI educational tool that queries public APIs to provide basic information from the user's IP and associated services: 
 - location, weather, currency, and sun.
 
+Weather command
+- `dotnet run --project ./src/Askbot -- weather` : shows weather for your current IP location (uses http://ip-api.com/json/)
+- `dotnet run --project ./src/Askbot -- weather <lat> <lon>` : shows weather for explicit decimal coordinates (latitude longitude)
+
 > [Ver PRD del proyecto AskBot](docs/ask-bot.PRD.md)
 
 ---
