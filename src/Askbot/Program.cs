@@ -5,44 +5,61 @@ namespace AskBot
   {
     /// <summary>
     /// Entry point of the AskBot application.
-    /// Greets the user, fetches and prints IP information, and optionally fetches weather information
-    /// if the "weather" argument is provided. Displays a help message for other arguments or if no arguments are given.
+    /// Supports: `weather` and `weather <lat> <lon>`
     /// </summary>
-    /// <param name="args">
-    /// Command-line arguments. If the first argument is "weather", weather information is fetched and displayed.
-    /// Otherwise, a help message is shown.
-    /// </param>
-    static void Main(string[] args)
+    static async System.Threading.Tasks.Task Main(string[] args)
     {
       Console.WriteLine("# AskBot here, welcome!");
       IpApi ip = IpApiClient.FetchIp();
       IpApiClient.PrintIp(ip);
-      if (args.Length > 0)
+
+      if (args.Length > 0 && args[0].ToLower() == "weather")
       {
-        if (args[0].ToLower() == "weather")
+        // Usage: askbot weather OR askbot weather <lat> <lon>
+        double? lat = null;
+        double? lon = null;
+        try
         {
+          if (args.Length == 3)
+          {
+            lat = double.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture);
+            lon = double.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture);
+          }
+
           Console.WriteLine("## Fetching weather information...");
           var weather = new Weather();
-          var weatherInfo = weather.FetchWeather();
+          string weatherInfo = await weather.FetchWeatherAsync(lat, lon, ip);
           Console.WriteLine(weatherInfo);
         }
-        else
+        catch (ArgumentException aex)
         {
-          PrintHelpMessage();
+          Console.WriteLine($"> {aex.Message}");
+          Environment.ExitCode = 1;
+        }
+        catch (System.Net.Http.HttpRequestException)
+        {
+          Console.WriteLine("> Weather service unavailable — try again later");
+          Environment.ExitCode = 2;
+        }
+        catch (System.Exception ex)
+        {
+          Console.WriteLine($"> Unexpected error: {ex.Message}");
+          Environment.ExitCode = 3;
         }
       }
       else
       {
         PrintHelpMessage();
       }
+
       Console.WriteLine("Bye!");
-      Console.Read();
     }
 
     private static void PrintHelpMessage()
     {
       Console.WriteLine("## Available commands:");
-      Console.WriteLine("  - `weather` :  Fetch the current weather information");
+      Console.WriteLine("  - `weather` :  Fetch the current weather information for your IP location");
+      Console.WriteLine("  - `weather <lat> <lon>` : Fetch weather for specific coordinates (decimal degrees)");
     }
   }
 }
