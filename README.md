@@ -30,4 +30,4 @@ Weather command
 
 - Author: [Alberto Basalo](https://albertobasalo.dev)
 - Academy: [Academy Organization](https://github.com/AlbertoBasaloAcademy)
-- Laboratory: [Source Repository](https://github.com/AlbertoBasaloAcademy/inetum_copilot-csharp)
+- Laboratory: [Source Repository](https://github.com/AlbertoBasaloLabs/copilot-csharp)
