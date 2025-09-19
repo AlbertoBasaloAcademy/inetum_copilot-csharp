@@ -50,17 +50,17 @@ namespace Askbot.Tests
       // Act
       var result = await weather.FetchWeatherAsync(40.0, -3.0, null);
 
-            // Assert: result is the formatted string and contains correct temperature (culture-agnostic)
-            Assert.NotNull(result);
-            Assert.Contains("Temperature:", result);
-            Assert.Contains("°C", result);
-            // Extract numeric temperature between 'Temperature:' and '°C'
-            var tempSection = result.Split("Temperature:")[1].Split('°')[0].Trim();
-            // Normalize decimal separator and parse
-            var tempNormalized = tempSection.Replace(',', '.').Replace("°C", string.Empty).Trim();
-            var tempValue = decimal.Parse(tempNormalized, System.Globalization.CultureInfo.InvariantCulture);
-            Assert.Equal(22.0m, tempValue);
-            Assert.Contains("Condition:", result);
+      // Assert: result is the formatted string and contains correct temperature (culture-agnostic)
+      Assert.NotNull(result);
+      Assert.Contains("Temperature:", result);
+      Assert.Contains("°C", result);
+      // Extract numeric temperature between 'Temperature:' and '°C'
+      var tempSection = result.Split("Temperature:")[1].Split('°')[0].Trim();
+      // Normalize decimal separator and parse
+      var tempNormalized = tempSection.Replace(',', '.').Replace("°C", string.Empty).Trim();
+      var tempValue = decimal.Parse(tempNormalized, System.Globalization.CultureInfo.InvariantCulture);
+      Assert.Equal(22.0m, tempValue);
+      Assert.Contains("Condition:", result);
     }
 
     [Fact]
@@ -88,14 +88,14 @@ namespace Askbot.Tests
       var ipApi = new IpApi("1.2.3.4", "success", "Spain", "ES", "", "", "Madrid", "", 40.4168, -3.7038, "", "", "", "");
       var result = await weather.FetchWeatherAsync(null, null, ipApi);
 
-            // Assert
-            Assert.NotNull(result);
-            Assert.Contains("Weather in Madrid, Spain", result);
-            Assert.Contains("Temperature:", result);
-            var tempSection2 = result.Split("Temperature:")[1].Split('°')[0].Trim();
-            var tempNormalized2 = tempSection2.Replace(',', '.');
-            var tempValue2 = decimal.Parse(tempNormalized2, System.Globalization.CultureInfo.InvariantCulture);
-            Assert.Equal(18.5m, tempValue2);
+      // Assert
+      Assert.NotNull(result);
+      Assert.Contains("Weather in Madrid, Spain", result);
+      Assert.Contains("Temperature:", result);
+      var tempSection2 = result.Split("Temperature:")[1].Split('°')[0].Trim();
+      var tempNormalized2 = tempSection2.Replace(',', '.');
+      var tempValue2 = decimal.Parse(tempNormalized2, System.Globalization.CultureInfo.InvariantCulture);
+      Assert.Equal(18.5m, tempValue2);
     }
 
     [Fact]
