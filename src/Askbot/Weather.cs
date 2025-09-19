@@ -7,12 +7,17 @@ namespace AskBot
 {
   public class Weather
   {
-    private static readonly HttpClient _http = new HttpClient();
+    private readonly HttpClient _http;
 
     private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
       PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
+
+    public Weather(HttpClient? client = null)
+    {
+      _http = client ?? new HttpClient();
+    }
 
     /// <summary>
     /// Fetches current weather. If lat/lon are null, attempts to use the provided ipApi coordinates.
