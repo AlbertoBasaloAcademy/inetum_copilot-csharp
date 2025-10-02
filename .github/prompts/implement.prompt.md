@@ -11,7 +11,8 @@ Implement the given specification.
 Read and follow the instructions with best practices and coding standards from:
 
 - [bst_clean-code.instructions.md](../instructions/bst_clean-code.instructions.md)
-- [lng_java.instructions.md](../instructions/lng_java.instructions.md)
+- [lng_csharp.instructions.md](../instructions/lng_csharp.instructions.md)
+- [docs structure](/docs/STRUCTURE.md)
 
 ## Workflow
 
