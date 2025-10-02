@@ -7,108 +7,135 @@ using AskBot; // Fix for IpApi reference
 
 namespace Askbot
 {
-        public class Money
+  /// <summary>
+  /// Provides functionality for fetching and formatting currency exchange rate information based on country location.
+  /// </summary>
+  public class Money
+  {
+    /// <summary>
+    /// Generates a money report including currency information and exchange rates for the specified IP location.
+    /// </summary>
+    /// <param name="ip">The IP API information containing country details.</param>
+    /// <returns>A formatted string report of currency and exchange rates.</returns>
+    public static async Task<string> GetMoneyReportAsync(IpApi ip)
+    {
+      string country = ip?.Country ?? "Unknown";
+      string countryCode = ip?.CountryCode ?? "";
+      CurrencyInfo currency = null;
+      if (!string.IsNullOrEmpty(countryCode))
+        currency = GetCurrencyInfo(countryCode);
+      if (currency == null && !string.IsNullOrEmpty(countryCode))
+        currency = await GetCurrencyInfoFallbackAsync(countryCode);
+
+      string currencyCode = currency?.Code ?? "EUR";
+      var rates = await FetchExchangeRatesAsync(currencyCode);
+      return FormatRatesOutput(country, countryCode, currency, rates);
+    }
+
+    private static readonly string[] ReferenceCurrencies = new[] { "EUR", "USD", "GBP", "CHF" };
+
+    /// <summary>
+    /// Represents the result of fetching exchange rates, including rates, date, and any error.
+    /// </summary>
+    public class ExchangeRatesResult
+    {
+      public string BaseCurrency { get; set; }
+      public Dictionary<string, decimal> Rates { get; set; } = new();
+      public string Date { get; set; }
+      public string Error { get; set; }
+    }
+
+    /// <summary>
+    /// Fetches exchange rates from the Frankfurter API for the given base currency against reference currencies.
+    /// </summary>
+    /// <param name="baseCurrency">The base currency code to get rates for.</param>
+    /// <returns>An ExchangeRatesResult containing the rates or error information.</returns>
+    public static async Task<ExchangeRatesResult> FetchExchangeRatesAsync(string baseCurrency)
+    {
+      var result = new ExchangeRatesResult { BaseCurrency = baseCurrency };
+      try
+      {
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+        var symbols = string.Join(",", ReferenceCurrencies);
+        var url = $"https://api.frankfurter.app/latest?base={baseCurrency}&symbols={symbols}";
+        var resp = await client.GetAsync(url);
+        if (!resp.IsSuccessStatusCode)
         {
-            public static async Task<string> GetMoneyReportAsync(IpApi ip)
-            {
-                string country = ip?.Country ?? "Unknown";
-                string countryCode = ip?.CountryCode ?? "";
-                CurrencyInfo currency = null;
-                if (!string.IsNullOrEmpty(countryCode))
-                    currency = GetCurrencyInfo(countryCode);
-                if (currency == null && !string.IsNullOrEmpty(countryCode))
-                    currency = await GetCurrencyInfoFallbackAsync(countryCode);
+          result.Error = $"Exchange rate API error: {resp.StatusCode}";
+          return result;
+        }
+        var json = await resp.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        result.Date = root.GetProperty("date").GetString();
+        var rates = root.GetProperty("rates");
+        foreach (var refCur in ReferenceCurrencies)
+        {
+          if (refCur == baseCurrency)
+          {
+            result.Rates[refCur] = 1.00m;
+            continue;
+          }
+          if (rates.TryGetProperty(refCur, out var val))
+            result.Rates[refCur] = val.GetDecimal();
+        }
+      }
+      catch (Exception ex)
+      {
+        result.Error = $"Exchange rate fetch failed: {ex.Message}";
+      }
+      return result;
+    }
 
-                string currencyCode = currency?.Code ?? "EUR";
-                var rates = await FetchExchangeRatesAsync(currencyCode);
-                return FormatRatesOutput(country, countryCode, currency, rates);
-            }
+    /// <summary>
+    /// Formats the currency and exchange rate information into a readable string report.
+    /// </summary>
+    /// <param name="country">The country name.</param>
+    /// <param name="countryCode">The country code.</param>
+    /// <param name="currency">The currency information.</param>
+    /// <param name="rates">The exchange rates result.</param>
+    /// <returns>A formatted string report.</returns>
+    public static string FormatRatesOutput(string country, string countryCode, CurrencyInfo currency, ExchangeRatesResult rates)
+    {
+      var lines = new List<string>();
+      lines.Add($"# {country} ({countryCode})");
+      if (currency != null)
+        lines.Add($"Currency: {currency.Name} ({currency.Code}) {currency.Symbol}");
+      else
+        lines.Add($"Currency: Unknown");
 
-            private static readonly string[] ReferenceCurrencies = new[] { "EUR", "USD", "GBP", "CHF" };
+      if (!string.IsNullOrEmpty(rates.Error))
+      {
+        lines.Add($"> {rates.Error}");
+        return string.Join("\n", lines);
+      }
 
-            public class ExchangeRatesResult
-            {
-                public string BaseCurrency { get; set; }
-                public Dictionary<string, decimal> Rates { get; set; } = new();
-                public string Date { get; set; }
-                public string Error { get; set; }
-            }
+      lines.Add($"Exchange rates (as of {rates.Date}):");
+      // Format: 1 <CUR> = X <REF> (symbol)  (aligned)
+      int colWidth = 8;
+      foreach (var refCur in ReferenceCurrencies)
+      {
+        if (!rates.Rates.TryGetValue(refCur, out var value))
+          continue;
+        string refSymbol = CountryCurrencyMap.Values.FirstOrDefault(c => c.Code == refCur)?.Symbol ?? refCur;
+        string valStr = value.ToString("0.####");
+        lines.Add($"  1 {currency?.Code ?? rates.BaseCurrency,-3} = {valStr,8} {refCur} {refSymbol}");
+      }
+      return string.Join("\n", lines);
+    }
 
-            public static async Task<ExchangeRatesResult> FetchExchangeRatesAsync(string baseCurrency)
-            {
-                var result = new ExchangeRatesResult { BaseCurrency = baseCurrency };
-                try
-                {
-                    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-                    var symbols = string.Join(",", ReferenceCurrencies);
-                    var url = $"https://api.frankfurter.app/latest?base={baseCurrency}&symbols={symbols}";
-                    var resp = await client.GetAsync(url);
-                    if (!resp.IsSuccessStatusCode)
-                    {
-                        result.Error = $"Exchange rate API error: {resp.StatusCode}";
-                        return result;
-                    }
-                    var json = await resp.Content.ReadAsStringAsync();
-                    using var doc = JsonDocument.Parse(json);
-                    var root = doc.RootElement;
-                    result.Date = root.GetProperty("date").GetString();
-                    var rates = root.GetProperty("rates");
-                    foreach (var refCur in ReferenceCurrencies)
-                    {
-                        if (refCur == baseCurrency)
-                        {
-                            result.Rates[refCur] = 1.00m;
-                            continue;
-                        }
-                        if (rates.TryGetProperty(refCur, out var val))
-                            result.Rates[refCur] = val.GetDecimal();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result.Error = $"Exchange rate fetch failed: {ex.Message}";
-                }
-                return result;
-            }
+    /// <summary>
+    /// Holds information about a currency, including code, name, and symbol.
+    /// </summary>
+    public class CurrencyInfo
+    {
+      public string Code { get; set; }
+      public string Name { get; set; }
+      public string Symbol { get; set; }
+    }
 
-            public static string FormatRatesOutput(string country, string countryCode, CurrencyInfo currency, ExchangeRatesResult rates)
-            {
-                var lines = new List<string>();
-                lines.Add($"# {country} ({countryCode})");
-                if (currency != null)
-                    lines.Add($"Currency: {currency.Name} ({currency.Code}) {currency.Symbol}");
-                else
-                    lines.Add($"Currency: Unknown");
-
-                if (!string.IsNullOrEmpty(rates.Error))
-                {
-                    lines.Add($"> {rates.Error}");
-                    return string.Join("\n", lines);
-                }
-
-                lines.Add($"Exchange rates (as of {rates.Date}):");
-                // Format: 1 <CUR> = X <REF> (symbol)  (aligned)
-                int colWidth = 8;
-                foreach (var refCur in ReferenceCurrencies)
-                {
-                    if (!rates.Rates.TryGetValue(refCur, out var value))
-                        continue;
-                    string refSymbol = CountryCurrencyMap.Values.FirstOrDefault(c => c.Code == refCur)?.Symbol ?? refCur;
-                    string valStr = value.ToString("0.####");
-                    lines.Add($"  1 {currency?.Code ?? rates.BaseCurrency,-3} = {valStr,8} {refCur} {refSymbol}");
-                }
-                return string.Join("\n", lines);
-            }
-
-            public class CurrencyInfo
-            {
-                public string Code { get; set; }
-                public string Name { get; set; }
-                public string Symbol { get; set; }
-            }
-
-            // Minimal ISO country code to currency info map
-            private static readonly Dictionary<string, CurrencyInfo> CountryCurrencyMap = new()
+    // Minimal ISO country code to currency info map
+    private static readonly Dictionary<string, CurrencyInfo> CountryCurrencyMap = new()
             {
                 { "US", new CurrencyInfo { Code = "USD", Name = "US Dollar", Symbol = "$" } },
                 { "GB", new CurrencyInfo { Code = "GBP", Name = "Pound Sterling", Symbol = "£" } },
@@ -128,32 +155,42 @@ namespace Askbot
                 // Add more as needed
             };
 
-            public static CurrencyInfo GetCurrencyInfo(string countryCode)
-            {
-                if (CountryCurrencyMap.TryGetValue(countryCode, out var info))
-                    return info;
-                return null;
-            }
+    /// <summary>
+    /// Retrieves currency information for a given country code from the static map.
+    /// </summary>
+    /// <param name="countryCode">The ISO country code.</param>
+    /// <returns>The CurrencyInfo for the country, or null if not found.</returns>
+    public static CurrencyInfo GetCurrencyInfo(string countryCode)
+    {
+      if (CountryCurrencyMap.TryGetValue(countryCode, out var info))
+        return info;
+      return null;
+    }
 
-            public static async Task<CurrencyInfo> GetCurrencyInfoFallbackAsync(string countryCode)
-            {
-                try
-                {
-                    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-                    var url = $"https://restcountries.com/v3.1/alpha/{countryCode}";
-                    var resp = await client.GetStringAsync(url);
-                    using var doc = JsonDocument.Parse(resp);
-                    var root = doc.RootElement[0];
-                    var currencyProp = root.GetProperty("currencies").EnumerateObject().First();
-                    var code = currencyProp.Name;
-                    var name = currencyProp.Value.GetProperty("name").GetString();
-                    var symbol = currencyProp.Value.TryGetProperty("symbol", out var s) ? s.GetString() : code;
-                    return new CurrencyInfo { Code = code, Name = name, Symbol = symbol };
-                }
-                catch
-                {
-                    return null;
-                }
-            }
-        }
+    /// <summary>
+    /// Fetches currency information from the REST Countries API as a fallback when not in the static map.
+    /// </summary>
+    /// <param name="countryCode">The ISO country code.</param>
+    /// <returns>The CurrencyInfo, or null if failed.</returns>
+    public static async Task<CurrencyInfo> GetCurrencyInfoFallbackAsync(string countryCode)
+    {
+      try
+      {
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+        var url = $"https://restcountries.com/v3.1/alpha/{countryCode}";
+        var resp = await client.GetStringAsync(url);
+        using var doc = JsonDocument.Parse(resp);
+        var root = doc.RootElement[0];
+        var currencyProp = root.GetProperty("currencies").EnumerateObject().First();
+        var code = currencyProp.Name;
+        var name = currencyProp.Value.GetProperty("name").GetString();
+        var symbol = currencyProp.Value.TryGetProperty("symbol", out var s) ? s.GetString() : code;
+        return new CurrencyInfo { Code = code, Name = name, Symbol = symbol };
+      }
+      catch
+      {
+        return null;
+      }
+    }
+  }
 }

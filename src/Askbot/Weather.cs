@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace AskBot
 {
+  /// <summary>
+  /// Provides functionality for fetching and formatting current weather information from the Open-Meteo API.
+  /// </summary>
   public class Weather
   {
     private readonly HttpClient _http;
@@ -14,6 +17,10 @@ namespace AskBot
       PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    /// <summary>
+    /// Initializes a new instance of the Weather class with an optional HttpClient.
+    /// </summary>
+    /// <param name="client">The HttpClient to use for API requests. If null, a new instance is created.</param>
     public Weather(HttpClient? client = null)
     {
       _http = client ?? new HttpClient();
@@ -101,6 +108,11 @@ namespace AskBot
       return $"🌤️ {header}:\n\tTemperature: {Math.Round(temperature, 1):0.0}°C\n\tPrecipitation: {precipitationText}\n\tCondition: {condition}";
     }
 
+    /// <summary>
+    /// Converts a WMO weather code to a human-readable weather condition description.
+    /// </summary>
+    /// <param name="code">The WMO weather code.</param>
+    /// <returns>A string describing the weather condition.</returns>
     private static string WeatherCodeToText(int code)
     {
       // Mapping based on Open-Meteo / WMO weather codes (simplified)

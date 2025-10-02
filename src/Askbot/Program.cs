@@ -82,12 +82,15 @@ namespace AskBot
       Console.WriteLine("Bye!");
     }
 
+    /// <summary>
+    /// Prints the help message with available commands.
+    /// </summary>
     private static void PrintHelpMessage()
     {
-  Console.WriteLine("## Available commands:");
-  Console.WriteLine("  - `weather` :  Fetch the current weather information for your IP location");
-  Console.WriteLine("  - `weather <lat> <lon>` : Fetch weather for specific coordinates (decimal degrees)");
-  Console.WriteLine("  - `money` :  Show your country's official currency and exchange rates vs EUR, USD, GBP, CHF");
+      Console.WriteLine("## Available commands:");
+      Console.WriteLine("  - `weather` :  Fetch the current weather information for your IP location");
+      Console.WriteLine("  - `weather <lat> <lon>` : Fetch weather for specific coordinates (decimal degrees)");
+      Console.WriteLine("  - `money` :  Show your country's official currency and exchange rates vs EUR, USD, GBP, CHF");
     }
   }
 }
