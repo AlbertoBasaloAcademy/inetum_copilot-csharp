@@ -25,6 +25,9 @@ Weather command
 - `dotnet run --project ./src/Askbot -- weather <lat> <lon>` : shows weather for explicit decimal coordinates (latitude longitude)
 
 > [Ver PRD del proyecto AskBot](docs/ask-bot.PRD.md)
+> [Project Structure](docs/STRUCTURE.md)
+> [Backlog](docs/BACKLOG.md)
+> [Changelog](docs/CHANGELOG.md)
 
 ---
 
